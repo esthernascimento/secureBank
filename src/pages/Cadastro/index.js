@@ -30,20 +30,42 @@ export default function Cadastro() {
       alert("As senhas não coincidem!");
       return;
     }
-
     const novoUsuario = {
+      id: Date.now(),
+
       nome,
       email,
       cpf,
       senha,
+
+      saldo: 0,
+      biometria: false,
+      notificacoes: true,
+      ultimoLogin: null,
+      contaProtegida: true,
+      scoreSeguranca: 100,
+      fotoPerfil: null,
+
+      dataCadastro: new Date().toISOString(),
     };
 
     setLoading(true);
 
     try {
+
       await AsyncStorage.setItem(
         "dadosUsuario",
         JSON.stringify(novoUsuario)
+      );
+
+      await AsyncStorage.setItem(
+        "transacoes",
+        JSON.stringify([])
+      );
+
+      await AsyncStorage.setItem(
+        "alertas",
+        JSON.stringify([])
       );
 
       alert("Cadastro realizado com sucesso!");
@@ -74,27 +96,27 @@ export default function Cadastro() {
           autoCapitalize="words"
         />
 
-   <Input
-  placeholder="E-mail"
-  value={email}
-  onChangeText={setEmail}
-  keyboardType="email-address"
-  autoCapitalize="none"
-/>
+        <Input
+          placeholder="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
-  <Input
-  placeholder="CPF"
-  value={cpf}
-  onChangeText={setCpf}
-  keyboardType="numeric"
-  autoCapitalize="none"
-/>
+        <Input
+          placeholder="CPF"
+          value={cpf}
+          onChangeText={setCpf}
+          keyboardType="numeric"
+          autoCapitalize="none"
+        />
         <Input
           placeholder="Senha"
           value={senha}
           onChangeText={setSenha}
           secureTextEntry
-           autoCapitalize="none"
+          autoCapitalize="none"
         />
 
         <Input
@@ -102,7 +124,7 @@ export default function Cadastro() {
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}
           secureTextEntry
-           autoCapitalize="none"
+          autoCapitalize="none"
         />
 
         <PrimaryButton

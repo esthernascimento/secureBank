@@ -6,32 +6,32 @@ export default function CustomModal({
     visible,
     message,
     onClose
-}){
+}) {
 
-return(
-<Modal
-transparent
-animationType="fade"
-visible={visible}
->
+    return (
+        <Modal
+            transparent
+            animationType="fade"
+            visible={visible}
+        >
 
-<View style={styles.overlay}>
-<View style={styles.modal}>
-<Text style={styles.text}>
-{message}
-</Text>
+            <View style={styles.overlay}>
+                <View style={styles.modal}>
+                    <Text style={styles.text}>
+                        {message}
+                    </Text>
 
-<Pressable
-style={styles.button}
-onPress={onClose}
->
+                    <Pressable
+                        style={styles.button}
+                        onPress={onClose}
+                    >
 
-<Text style={styles.buttonText}>
-OK
-</Text>
-</Pressable>
-</View>
-</View>
-</Modal>
-);
+                        <Text style={styles.buttonText}>
+                            OK
+                        </Text>
+                    </Pressable>
+                </View>
+            </View>
+        </Modal>
+    );
 }

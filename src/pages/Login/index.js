@@ -42,6 +42,13 @@ export default function Login() {
         dadosUsuario.senha === senha
       ) {
 
+        dadosUsuario.ultimoLogin = new Date().toISOString();
+
+        await AsyncStorage.setItem(
+          "dadosUsuario",
+          JSON.stringify(dadosUsuario)
+        );
+
         await AsyncStorage.setItem(
           "usuarioLogado",
           JSON.stringify(dadosUsuario)
