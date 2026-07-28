@@ -9,6 +9,7 @@ export default StyleSheet.create({
 
   conteudo: {
     padding: 25,
+    marginTop: 30
   },
 
   cabecalho: {
