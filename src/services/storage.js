@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const CHAVE_TRANSACOES = "transacoes";
 const CHAVE_USUARIO_LOGADO = "usuarioLogado";
 const CHAVE_DADOS_USUARIO = "dadosUsuario";
+const CHAVE_ALERTAS = "alertas";
 
 /**
  * Retorna todas as transações salvas, da mais recente para a mais antiga.
@@ -31,8 +32,7 @@ async function salvarUsuario(usuario) {
 }
 
 /**
- * Adiciona uma nova transação, atualiza o saldo do usuário logado
- * e retorna { transacoes, usuario } já atualizados.
+ * Adiciona uma nova transação, atualiza o saldo e gera um ALERTA AUTOMÁTICO.
  */
 export async function adicionarTransacao({ titulo, valor, tipo, categoria, descricao }) {
   const novaTransacao = {
@@ -61,12 +61,18 @@ export async function adicionarTransacao({ titulo, valor, tipo, categoria, descr
     await salvarUsuario(usuario);
   }
 
+  // DISPARA ALERTA AUTOMÁTICO
+  await adicionarAlerta({
+    titulo: tipo === "entrada" ? "Entrada registrada" : "Saída registrada",
+    descricao: `${categoria} • R$ ${novaTransacao.valor.toFixed(2)}`,
+    tipo,
+  });
+
   return { transacoes: transacoesAtualizadas, usuario };
 }
 
 /**
- * Exclui uma transação pelo id, devolve/desconta o valor do saldo
- * (o oposto do que aconteceu ao criá-la) e retorna { transacoes, usuario } atualizados.
+ * Exclui uma transação, ajusta o saldo e gera um ALERTA AUTOMÁTICO.
  */
 export async function excluirTransacao(transacaoId) {
   const transacoesAtuais = await obterTransacoes();
@@ -85,12 +91,18 @@ export async function excluirTransacao(transacaoId) {
     await salvarUsuario(usuario);
   }
 
+  // DISPARA ALERTA AUTOMÁTICO
+  await adicionarAlerta({
+    titulo: "Transação removida",
+    descricao: "Uma movimentação foi excluída.",
+    tipo: "info",
+  });
+
   return { transacoes: transacoesAtualizadas, usuario };
 }
 
 /**
- * Edita uma transação existente. Desfaz o efeito dela no saldo (o valor/tipo antigo)
- * e aplica o efeito novo, evitando que o saldo fique errado após a mudança.
+ * Edita uma transação, atualiza o saldo e gera um ALERTA AUTOMÁTICO.
  */
 export async function editarTransacao(transacaoId, dadosNovos) {
   const transacoesAtuais = await obterTransacoes();
@@ -113,13 +125,11 @@ export async function editarTransacao(transacaoId, dadosNovos) {
 
   const usuario = await obterUsuarioLogado();
   if (usuario) {
-    // desfaz o efeito da transação antiga
     usuario.saldo =
       transacaoAntiga.tipo === "entrada"
         ? usuario.saldo - transacaoAntiga.valor
         : usuario.saldo + transacaoAntiga.valor;
 
-    // aplica o efeito da transação atualizada
     usuario.saldo =
       transacaoAtualizada.tipo === "entrada"
         ? usuario.saldo + transacaoAtualizada.valor
@@ -128,5 +138,83 @@ export async function editarTransacao(transacaoId, dadosNovos) {
     await salvarUsuario(usuario);
   }
 
+  // DISPARA ALERTA AUTOMÁTICO
+  await adicionarAlerta({
+    titulo: "Transação alterada",
+    descricao: `Atualizado para R$ ${transacaoAtualizada.valor.toFixed(2)}`,
+    tipo: "info",
+  });
+
   return { transacoes: transacoesAtualizadas, usuario, transacao: transacaoAtualizada };
+}
+
+// --- METODOS DE ALERTAS ---
+
+export async function obterAlertas() {
+  try {
+    const alertas = await AsyncStorage.getItem(CHAVE_ALERTAS);
+    return alertas ? JSON.parse(alertas) : [];
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}
+
+export async function adicionarAlerta({ titulo, descricao, tipo = "info" }) {
+  try {
+    const alertas = await obterAlertas();
+
+    const novoAlerta = {
+      id: Date.now(),
+      titulo,
+      descricao,
+      tipo,
+      data: new Date().toISOString(),
+      lido: false,
+    };
+
+    alertas.unshift(novoAlerta);
+
+    await AsyncStorage.setItem(CHAVE_ALERTAS, JSON.stringify(alertas));
+    return alertas;
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}
+
+export async function marcarComoLido(id) {
+  try {
+    const alertas = await obterAlertas();
+    const listaAtualizada = alertas.map((item) =>
+      item.id === id ? { ...item, lido: true } : item
+    );
+
+    await AsyncStorage.setItem(CHAVE_ALERTAS, JSON.stringify(listaAtualizada));
+    return listaAtualizada;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function excluirAlerta(id) {
+  try {
+    const alertas = await obterAlertas();
+    const novaLista = alertas.filter((item) => item.id !== id);
+
+    await AsyncStorage.setItem(CHAVE_ALERTAS, JSON.stringify(novaLista));
+    return novaLista;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function limparAlertas() {
+  try {
+    await AsyncStorage.setItem(CHAVE_ALERTAS, JSON.stringify([]));
+    return [];
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
 }
