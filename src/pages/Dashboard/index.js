@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, ActivityIndicator } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Logo from "../../components/Logo";
@@ -16,11 +16,7 @@ export default function Dashboard() {
   const [quantidadeAlertas, setQuantidadeAlertas] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    carregarDashboard();
-  }, []);
-
-  async function carregarDashboard() {
+  const carregarDashboard = useCallback(async () => {
     try {
       const usuarioSalvo = await AsyncStorage.getItem("usuarioLogado");
 
@@ -44,7 +40,13 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarDashboard();
+    }, [carregarDashboard])
+  );
 
   if (loading) {
     return (

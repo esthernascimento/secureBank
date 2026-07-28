@@ -1,32 +1,36 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-card:{
-backgroundColor:"#FFF",
-padding:18,
-borderRadius:15,
-marginBottom:15,
-},
 
-title:{
-fontSize:18,
-fontWeight:"bold",
-},
+  card: {
+    backgroundColor: "#FFF",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
 
-value:{
-fontSize:20,
-marginTop:8,
-},
+  info: {
+    flex: 1,
+  },
 
-date:{
-marginTop:6,
-color:"#666",
-},
+  titulo: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 
-status:{
-marginTop:6,
-fontWeight:"bold",
-color:"#6D28D9",
-}
+  data: {
+    color: "#888",
+    fontSize: 13,
+    marginTop: 4,
+  },
+
+  valor: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 
 });
