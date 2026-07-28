@@ -43,6 +43,8 @@ export async function adicionarTransacao({ titulo, valor, tipo, categoria, descr
     categoria,
     descricao,
     data: new Date().toISOString(),
+    status: "Concluída",
+    metodo: categoria,
   };
 
   const transacoesAtuais = await obterTransacoes();
@@ -60,4 +62,71 @@ export async function adicionarTransacao({ titulo, valor, tipo, categoria, descr
   }
 
   return { transacoes: transacoesAtualizadas, usuario };
+}
+
+/**
+ * Exclui uma transação pelo id, devolve/desconta o valor do saldo
+ * (o oposto do que aconteceu ao criá-la) e retorna { transacoes, usuario } atualizados.
+ */
+export async function excluirTransacao(transacaoId) {
+  const transacoesAtuais = await obterTransacoes();
+  const transacaoRemovida = transacoesAtuais.find((t) => t.id === transacaoId);
+  const transacoesAtualizadas = transacoesAtuais.filter((t) => t.id !== transacaoId);
+
+  await AsyncStorage.setItem(CHAVE_TRANSACOES, JSON.stringify(transacoesAtualizadas));
+
+  const usuario = await obterUsuarioLogado();
+  if (usuario && transacaoRemovida) {
+    usuario.saldo =
+      transacaoRemovida.tipo === "entrada"
+        ? usuario.saldo - transacaoRemovida.valor
+        : usuario.saldo + transacaoRemovida.valor;
+
+    await salvarUsuario(usuario);
+  }
+
+  return { transacoes: transacoesAtualizadas, usuario };
+}
+
+/**
+ * Edita uma transação existente. Desfaz o efeito dela no saldo (o valor/tipo antigo)
+ * e aplica o efeito novo, evitando que o saldo fique errado após a mudança.
+ */
+export async function editarTransacao(transacaoId, dadosNovos) {
+  const transacoesAtuais = await obterTransacoes();
+  const index = transacoesAtuais.findIndex((t) => t.id === transacaoId);
+  if (index === -1) return null;
+
+  const transacaoAntiga = transacoesAtuais[index];
+
+  const transacaoAtualizada = {
+    ...transacaoAntiga,
+    ...dadosNovos,
+    valor: Number(dadosNovos.valor ?? transacaoAntiga.valor),
+    metodo: dadosNovos.categoria ?? transacaoAntiga.metodo,
+  };
+
+  const transacoesAtualizadas = [...transacoesAtuais];
+  transacoesAtualizadas[index] = transacaoAtualizada;
+
+  await AsyncStorage.setItem(CHAVE_TRANSACOES, JSON.stringify(transacoesAtualizadas));
+
+  const usuario = await obterUsuarioLogado();
+  if (usuario) {
+    // desfaz o efeito da transação antiga
+    usuario.saldo =
+      transacaoAntiga.tipo === "entrada"
+        ? usuario.saldo - transacaoAntiga.valor
+        : usuario.saldo + transacaoAntiga.valor;
+
+    // aplica o efeito da transação atualizada
+    usuario.saldo =
+      transacaoAtualizada.tipo === "entrada"
+        ? usuario.saldo + transacaoAtualizada.valor
+        : usuario.saldo - transacaoAtualizada.valor;
+
+    await salvarUsuario(usuario);
+  }
+
+  return { transacoes: transacoesAtualizadas, usuario, transacao: transacaoAtualizada };
 }

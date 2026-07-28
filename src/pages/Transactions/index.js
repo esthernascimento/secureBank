@@ -188,6 +188,9 @@ export default function Transactions() {
             valor={item.valor}
             tipo={item.tipo}
             data={item.data}
+            onPress={() =>
+              navigation.navigate("TransactionDetails", { transacao: item })
+            }
           />
         )}
         ListEmptyComponent={
