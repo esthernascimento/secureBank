@@ -1,12 +1,17 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import React, { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Logo from "../../components/Logo";
-import PrimaryButton from "../../components/PrimaryButton";
-
 import styles from "./style";
+
+function formatarMoeda(valor) {
+  return (valor ?? 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
 export default function Dashboard() {
   const navigation = useNavigation();
@@ -16,58 +21,40 @@ export default function Dashboard() {
   const [quantidadeAlertas, setQuantidadeAlertas] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const carregarDashboard = useCallback(async () => {
+  const carregarDashboard = async () => {
     try {
-      const usuarioSalvo = await AsyncStorage.getItem("usuarioLogado");
+      const usuario = JSON.parse(
+        (await AsyncStorage.getItem("usuarioLogado")) || "{}"
+      );
+      setUsuario(usuario);
 
-      if (usuarioSalvo) {
-        setUsuario(JSON.parse(usuarioSalvo));
-      }
+      const transacoes = JSON.parse(
+        (await AsyncStorage.getItem("transacoes")) || "[]"
+      );
+      setQuantidadeTransacoes(transacoes.length);
 
-      const transacoes = await AsyncStorage.getItem("transacoes");
-
-      if (transacoes) {
-        setQuantidadeTransacoes(JSON.parse(transacoes).length);
-      }
-
-      const alertas = await AsyncStorage.getItem("alertas");
-
-      if (alertas) {
-        setQuantidadeAlertas(JSON.parse(alertas).length);
-      }
+      const alertas = JSON.parse(
+        (await AsyncStorage.getItem("alertas")) || "[]"
+      );
+      setQuantidadeAlertas(alertas.length);
     } catch (error) {
       console.log(error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useFocusEffect(
-    useCallback(() => {
+    React.useCallback(() => {
       carregarDashboard();
-    }, [carregarDashboard])
+    }, [])
   );
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#242424",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-
-        <Text
-          style={{
-            color: "#fff",
-            marginTop: 15,
-          }}
-        >
-          Carregando...
-        </Text>
+      <View style={styles.containerLoading}>
+        <ActivityIndicator size="large" color="#FFF" />
+        <Text style={styles.textoLoading}>Carregando...</Text>
       </View>
     );
   }
@@ -75,104 +62,93 @@ export default function Dashboard() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={styles.conteudo}
+      showsVerticalScrollIndicator={false}
     >
-      <Logo size={90} />
+      <View style={styles.cabecalho}>
+        <View>
+          <Text style={styles.bemVindo}>Olá,</Text>
+          <Text style={styles.nome}>{usuario?.nome ?? "Usuário"} 👋</Text>
+        </View>
 
-      <Text style={styles.bemVindo}>Olá,</Text>
-
-      <Text style={styles.nome}>
-        {usuario ? usuario.nome : "Usuário"} 👋
-      </Text>
-
-      {/* Saldo */}
-
-      <View style={styles.card}>
-        <Text style={styles.titulo}>Saldo disponível</Text>
-
-        <Text style={styles.valor}>
-          R$ {usuario ? usuario.saldo.toFixed(2) : "0,00"}
-        </Text>
+        <Logo size={50} style={{ marginTop: 4 }} />
       </View>
 
-      {/* Segurança */}
+      <View style={styles.cardDestaque}>
+        <Text style={styles.tituloDestaque}>Saldo disponível</Text>
+        <Text style={styles.valorDestaque}>{formatarMoeda(usuario?.saldo)}</Text>
+      </View>
+
+      <Text style={styles.secaoTitulo}>Acesso Rápido</Text>
+
+      <View style={styles.gridAcoes}>
+        <TouchableOpacity style={styles.botaoAcao} onPress={() => navigation.navigate("Transactions")}>
+          <Image source={require("../../../assets/img/invest.png")} style={styles.iconeAcao} />
+          <Text style={styles.textoAcao}>Transações</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.botaoAcao} onPress={() => navigation.navigate("Alerts")}>
+          <Image source={require("../../../assets/img/sino.png")} style={styles.iconeAcao} />
+          <Text style={styles.textoAcao}>Alertas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.botaoAcao} onPress={() => navigation.navigate("Profile")}>
+          <Image source={require("../../../assets/img/perfil.png")} style={styles.iconeAcao} />
+          <Text style={styles.textoAcao}>Perfil</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.secaoTitulo}>Métricas da Conta</Text>
+
+      <View style={styles.linhaCards}>
+        <View style={styles.cardMeio}>
+          <Text style={styles.titulo}>Transações</Text>
+          <Text style={styles.valorNumero}>{quantidadeTransacoes}</Text>
+          <Text style={styles.subtexto}>Registradas</Text>
+        </View>
+
+        <View style={styles.cardMeio}>
+          <Text style={styles.titulo}>Alertas</Text>
+          <Text style={styles.valorNumero}>{quantidadeAlertas}</Text>
+          <Text style={styles.subtexto}>Notificações</Text>
+        </View>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.titulo}>Segurança da Conta</Text>
 
-        <Text style={styles.info}>
-          Score: {usuario ? usuario.scoreSeguranca : 0}%
-        </Text>
+        <View style={styles.linhaInfo}>
+          <Text style={styles.infoRotulo}>Score de Proteção</Text>
+          <Text style={styles.infoDestaque}>{usuario?.scoreSeguranca ?? 0}%</Text>
+        </View>
 
-        <Text style={styles.info}>
-          Biometria:
-          {usuario?.biometria ? " Ativada" : " Desativada"}
-        </Text>
+        <View style={styles.linhaInfo}>
+          <Text style={styles.infoRotulo}>Biometria</Text>
+          <Text style={styles.infoValor}>{usuario?.biometria ? "Ativada" : "Desativada"}</Text>
+        </View>
 
-        <Text style={styles.info}>
-          Notificações:
-          {usuario?.notificacoes ? " Ativadas" : " Desativadas"}
-        </Text>
+        <View style={styles.linhaInfo}>
+          <Text style={styles.infoRotulo}>Notificações</Text>
+          <Text style={styles.infoValor}>{usuario?.notificacoes ? "Ativadas" : "Desativadas"}</Text>
+        </View>
       </View>
 
-      {/* Resumo */}
-
       <View style={styles.card}>
-        <Text style={styles.titulo}>Resumo</Text>
+        <Text style={styles.titulo}>Dados do Titular</Text>
 
-        <Text style={styles.info}>
-          Transações: {quantidadeTransacoes}
-        </Text>
+        <Text style={styles.rotuloPequeno}>CPF</Text>
+        <Text style={styles.valorPequeno}>{usuario?.cpf ?? "—"}</Text>
 
-        <Text style={styles.info}>
-          Alertas: {quantidadeAlertas}
-        </Text>
-      </View>
+        <Text style={styles.rotuloPequeno}>Email</Text>
+        <Text style={styles.valorPequeno}>{usuario?.email ?? "—"}</Text>
 
-      {/* Informações */}
-
-      <View style={styles.card}>
-        <Text style={styles.titulo}>Informações da Conta</Text>
-
-        <Text style={styles.info}>CPF</Text>
-
+        <Text style={styles.rotuloPequeno}>Último Acesso</Text>
         <Text style={styles.valorPequeno}>
-          {usuario?.cpf}
-        </Text>
-
-        <Text style={styles.info}>Email</Text>
-
-        <Text style={styles.valorPequeno}>
-          {usuario?.email}
-        </Text>
-      </View>
-
-      {/* Último acesso */}
-
-      <View style={styles.card}>
-        <Text style={styles.titulo}>Último acesso</Text>
-
-        <Text style={styles.info}>
           {usuario?.ultimoLogin
             ? new Date(usuario.ultimoLogin).toLocaleString("pt-BR")
             : "Primeiro acesso"}
         </Text>
       </View>
-
-      <PrimaryButton
-        title="Transações"
-        onPress={() => navigation.navigate("Transactions")}
-      />
-
-      <PrimaryButton
-        title="Alertas"
-        onPress={() => navigation.navigate("Alerts")}
-      />
-
-      <PrimaryButton
-        title="Perfil"
-        onPress={() => navigation.navigate("Profile")}
-      />
     </ScrollView>
   );
 }

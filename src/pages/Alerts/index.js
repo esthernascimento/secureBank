@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import Logo from "../../components/Logo";
 
 import AlertCard from "../../components/AlertCard";
 import {
@@ -54,12 +55,9 @@ export default function Alerts() {
               <Text style={estilos.setaVoltar}>{"‹"}</Text>
             </TouchableOpacity>
             <Text style={estilos.titulo}>Alertas</Text>
-
+            <Logo size={50} style={{ marginTop: 4 }} />
             {alertas.length > 0 && (
-              <TouchableOpacity
-                style={estilos.botaoLimparHeader}
-                onPress={handleLimpar}
-              >
+              <TouchableOpacity style={estilos.botaoLimparHeader} onPress={handleLimpar}>
                 <Text style={estilos.textoLimparHeader}>Limpar tudo</Text>
               </TouchableOpacity>
             )}

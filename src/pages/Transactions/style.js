@@ -1,7 +1,6 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "#242424",
@@ -9,12 +8,13 @@ export default StyleSheet.create({
 
   conteudo: {
     padding: 25,
-    marginTop: 30
+    marginTop: 30,
   },
 
   cabecalho: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
 
@@ -28,6 +28,7 @@ export default StyleSheet.create({
     color: "#FFF",
     fontSize: 28,
     fontWeight: "bold",
+    flex: 1,
   },
 
   card: {
@@ -144,5 +145,4 @@ export default StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-
 });

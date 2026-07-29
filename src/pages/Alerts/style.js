@@ -5,7 +5,7 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: "#242424",
   },
-  
+
   conteudo: {
     padding: 25,
     paddingBottom: 40,
@@ -37,6 +37,7 @@ export default StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: "#333",
     borderRadius: 12,
+    marginLeft: 12,
   },
 
   textoLimparHeader: {

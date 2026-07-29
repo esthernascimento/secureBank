@@ -20,12 +20,12 @@ export default function AlertCard({ item, onPress, onExcluir }) {
     tipo === "sucesso" || tipo === "entrada"
       ? "#22C55E"
       : tipo === "saida"
-      ? "#EF4444"
-      : "#333";
+        ? "#EF4444"
+        : "#333";
 
   return (
     <TouchableOpacity
-      style={[estilos.card, !lido && estilos.cardNaoLido]}
+      style={estilos.card}
       onPress={onPress}
       activeOpacity={0.85}
     >

@@ -3,10 +3,15 @@ import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import Input from "../../components/Input";
+import Logo from "../../components/Logo";
 import { editarTransacao, excluirTransacao } from "../../services/storage";
 import estilos from "./style";
 
 const CATEGORIAS = ["PIX", "Mercado", "Assinatura", "Salário", "Outros"];
+const TIPOS = [
+  { valor: "entrada", label: "Entrada" },
+  { valor: "saida", label: "Saída" },
+];
 
 function formatarMoeda(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -14,6 +19,15 @@ function formatarMoeda(valor) {
 
 function formatarData(dataIso) {
   return new Date(dataIso).toLocaleDateString("pt-BR");
+}
+
+function Campo({ rotulo, valor }) {
+  return (
+    <View style={estilos.card}>
+      <Text style={estilos.rotulo}>{rotulo}</Text>
+      <Text style={estilos.info}>{valor}</Text>
+    </View>
+  );
 }
 
 export default function TransactionDetails() {
@@ -25,28 +39,32 @@ export default function TransactionDetails() {
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
 
-  const [valor, setValor] = useState(String(transacao.valor));
-  const [descricao, setDescricao] = useState(transacao.descricao);
-  const [categoria, setCategoria] = useState(transacao.categoria);
-  const [tipo, setTipo] = useState(transacao.tipo);
+  const [form, setForm] = useState({
+    valor: String(transacao.valor),
+    descricao: transacao.descricao,
+    categoria: transacao.categoria,
+    tipo: transacao.tipo,
+  });
+
+  function atualizarForm(campo, valor) {
+    setForm({ ...form, [campo]: valor });
+  }
 
   const ehEntrada = transacao.tipo === "entrada";
   const cor = ehEntrada ? "#22C55E" : "#EF4444";
 
   function handleEditar() {
-    setValor(String(transacao.valor));
-    setDescricao(transacao.descricao);
-    setCategoria(transacao.categoria);
-    setTipo(transacao.tipo);
+    setForm({
+      valor: String(transacao.valor),
+      descricao: transacao.descricao,
+      categoria: transacao.categoria,
+      tipo: transacao.tipo,
+    });
     setEditando(true);
   }
 
-  function handleCancelar() {
-    setEditando(false);
-  }
-
   async function handleSalvar() {
-    const valorNumerico = Number(String(valor).replace(",", "."));
+    const valorNumerico = Number(String(form.valor).replace(",", "."));
 
     if (!valorNumerico || valorNumerico <= 0) {
       Alert.alert("Valor inválido", "Informe um valor maior que zero.");
@@ -56,11 +74,11 @@ export default function TransactionDetails() {
     setSalvando(true);
 
     const resultado = await editarTransacao(transacao.id, {
-      titulo: descricao || categoria,
+      titulo: form.descricao || form.categoria,
       valor: valorNumerico,
-      tipo,
-      categoria,
-      descricao: descricao || categoria,
+      tipo: form.tipo,
+      categoria: form.categoria,
+      descricao: form.descricao || form.categoria,
     });
 
     setSalvando(false);
@@ -95,93 +113,79 @@ export default function TransactionDetails() {
     return (
       <ScrollView style={estilos.container} contentContainerStyle={estilos.conteudo}>
         <View style={estilos.cabecalho}>
-          <TouchableOpacity onPress={handleCancelar}>
+          <TouchableOpacity onPress={() => setEditando(false)}>
             <Text style={estilos.setaVoltar}>{"‹"}</Text>
           </TouchableOpacity>
           <Text style={estilos.titulo}>Editar</Text>
+          <Logo size={50} style={{ marginTop: 4 }} />
         </View>
 
         <View style={estilos.card}>
           <Text style={estilos.rotulo}>Valor</Text>
           <Input
             keyboardType="numeric"
-            value={valor}
-            onChangeText={setValor}
+            value={form.valor}
+            onChangeText={(texto) => atualizarForm("valor", texto)}
           />
         </View>
 
         <View style={estilos.card}>
           <Text style={estilos.rotulo}>Descrição</Text>
-          <Input value={descricao} onChangeText={setDescricao} />
+          <Input
+            value={form.descricao}
+            onChangeText={(texto) => atualizarForm("descricao", texto)}
+          />
         </View>
 
         <View style={estilos.card}>
           <Text style={estilos.rotulo}>Categoria</Text>
           <View style={estilos.linhaCategorias}>
-            {CATEGORIAS.map((item) => (
-              <TouchableOpacity
-                key={item}
-                style={[
-                  estilos.chipCategoria,
-                  categoria === item && estilos.chipCategoriaAtiva,
-                ]}
-                onPress={() => setCategoria(item)}
-              >
-                <Text
-                  style={[
-                    estilos.textoChip,
-                    categoria === item && estilos.textoChipAtivo,
-                  ]}
+            {CATEGORIAS.map((item) => {
+              const ativa = form.categoria === item;
+              return (
+                <TouchableOpacity
+                  key={item}
+                  style={[estilos.chipCategoria, ativa && estilos.chipCategoriaAtiva]}
+                  onPress={() => atualizarForm("categoria", item)}
                 >
-                  {item}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text style={[estilos.textoChip, ativa && estilos.textoChipAtivo]}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         <View style={estilos.card}>
           <Text style={estilos.rotulo}>Tipo</Text>
           <View style={estilos.linhaTipo}>
-            <TouchableOpacity
-              style={[
-                estilos.botaoTipo,
-                tipo === "entrada" && estilos.botaoTipoEntradaAtivo,
-              ]}
-              onPress={() => setTipo("entrada")}
-            >
-              <Text
-                style={[
-                  estilos.textoBotaoTipo,
-                  tipo === "entrada" && estilos.textoBotaoTipoAtivo,
-                ]}
-              >
-                Entrada
-              </Text>
-            </TouchableOpacity>
+            {TIPOS.map(({ valor, label }) => {
+              const ativo = form.tipo === valor;
+              const estiloAtivo =
+                valor === "entrada" ? estilos.botaoTipoEntradaAtivo : estilos.botaoTipoSaidaAtivo;
 
-            <TouchableOpacity
-              style={[
-                estilos.botaoTipo,
-                { marginRight: 0 },
-                tipo === "saida" && estilos.botaoTipoSaidaAtivo,
-              ]}
-              onPress={() => setTipo("saida")}
-            >
-              <Text
-                style={[
-                  estilos.textoBotaoTipo,
-                  tipo === "saida" && estilos.textoBotaoTipoAtivo,
-                ]}
-              >
-                Saída
-              </Text>
-            </TouchableOpacity>
+              return (
+                <TouchableOpacity
+                  key={valor}
+                  style={[
+                    estilos.botaoTipo,
+                    valor === "saida" && { marginRight: 0 },
+                    ativo && estiloAtivo,
+                  ]}
+                  onPress={() => atualizarForm("tipo", valor)}
+                >
+                  <Text style={[estilos.textoBotaoTipo, ativo && estilos.textoBotaoTipoAtivo]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         <View style={estilos.acoes}>
-          <TouchableOpacity style={estilos.botaoEditar} onPress={handleCancelar}>
+          <TouchableOpacity style={estilos.botaoEditar} onPress={() => setEditando(false)}>
             <Text style={estilos.textoBotao}>Cancelar</Text>
           </TouchableOpacity>
 
@@ -204,6 +208,7 @@ export default function TransactionDetails() {
           <Text style={estilos.setaVoltar}>{"‹"}</Text>
         </TouchableOpacity>
         <Text style={estilos.titulo}>Transação</Text>
+        <Logo size={50} style={{ marginTop: 4 }} />
       </View>
 
       <View style={estilos.cardValor}>
@@ -214,35 +219,12 @@ export default function TransactionDetails() {
         </Text>
       </View>
 
-      <View style={estilos.card}>
-        <Text style={estilos.rotulo}>Categoria</Text>
-        <Text style={estilos.info}>{transacao.categoria}</Text>
-      </View>
-
-      <View style={estilos.card}>
-        <Text style={estilos.rotulo}>Descrição</Text>
-        <Text style={estilos.info}>{transacao.descricao}</Text>
-      </View>
-
-      <View style={estilos.card}>
-        <Text style={estilos.rotulo}>Tipo</Text>
-        <Text style={estilos.info}>{ehEntrada ? "Entrada" : "Saída"}</Text>
-      </View>
-
-      <View style={estilos.card}>
-        <Text style={estilos.rotulo}>Status</Text>
-        <Text style={estilos.info}>{transacao.status ?? "Concluída"}</Text>
-      </View>
-
-      <View style={estilos.card}>
-        <Text style={estilos.rotulo}>Data</Text>
-        <Text style={estilos.info}>{formatarData(transacao.data)}</Text>
-      </View>
-
-      <View style={estilos.card}>
-        <Text style={estilos.rotulo}>ID</Text>
-        <Text style={estilos.info}>{transacao.id}</Text>
-      </View>
+      <Campo rotulo="Categoria" valor={transacao.categoria} />
+      <Campo rotulo="Descrição" valor={transacao.descricao} />
+      <Campo rotulo="Tipo" valor={ehEntrada ? "Entrada" : "Saída"} />
+      <Campo rotulo="Status" valor={transacao.status ?? "Concluída"} />
+      <Campo rotulo="Data" valor={formatarData(transacao.data)} />
+      <Campo rotulo="ID" valor={transacao.id} />
 
       <View style={estilos.acoes}>
         <TouchableOpacity style={estilos.botaoEditar} onPress={handleEditar}>

@@ -12,11 +12,6 @@ export default StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  
-  cardNaoLido: {
-    borderLeftWidth: 4,
-    borderLeftColor: "#22C55E",
-  },
 
   linhaTopo: {
     flexDirection: "row",
