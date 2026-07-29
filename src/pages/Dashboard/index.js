@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Dimensions } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BarChart } from "react-native-chart-kit";
 
 import Logo from "../../components/Logo";
 import styles from "./style";
+
+const larguraTela = Dimensions.get("window").width;
 
 function formatarMoeda(valor) {
   return (valor ?? 0).toLocaleString("pt-BR", {
@@ -19,6 +22,8 @@ export default function Dashboard() {
   const [usuario, setUsuario] = useState(null);
   const [quantidadeTransacoes, setQuantidadeTransacoes] = useState(0);
   const [quantidadeAlertas, setQuantidadeAlertas] = useState(0);
+  const [totalEntradas, setTotalEntradas] = useState(0);
+  const [totalSaidas, setTotalSaidas] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const carregarDashboard = async () => {
@@ -32,6 +37,17 @@ export default function Dashboard() {
         (await AsyncStorage.getItem("transacoes")) || "[]"
       );
       setQuantidadeTransacoes(transacoes.length);
+
+      const entradas = transacoes
+        .filter((item) => item.tipo === "entrada")
+        .reduce((soma, item) => soma + item.valor, 0);
+
+      const saidas = transacoes
+        .filter((item) => item.tipo === "saida")
+        .reduce((soma, item) => soma + item.valor, 0);
+
+      setTotalEntradas(entradas);
+      setTotalSaidas(saidas);
 
       const alertas = JSON.parse(
         (await AsyncStorage.getItem("alertas")) || "[]"
@@ -58,6 +74,11 @@ export default function Dashboard() {
       </View>
     );
   }
+
+  const dadosGrafico = {
+    labels: ["Entradas", "Saídas"],
+    datasets: [{ data: [totalEntradas, totalSaidas] }],
+  };
 
   return (
     <ScrollView
@@ -96,6 +117,29 @@ export default function Dashboard() {
           <Image source={require("../../../assets/img/perfil.png")} style={styles.iconeAcao} />
           <Text style={styles.textoAcao}>Perfil</Text>
         </TouchableOpacity>
+      </View>
+
+      <Text style={styles.secaoTitulo}>Entradas x Saídas</Text>
+
+      <View style={styles.card}>
+        <BarChart
+          data={dadosGrafico}
+          width={larguraTela - 90}
+          height={200}
+          fromZero
+          showValuesOnTopOfBars
+          withInnerLines={false}
+          chartConfig={{
+            backgroundColor: "#FFF",
+            backgroundGradientFrom: "#FFF",
+            backgroundGradientTo: "#FFF",
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+            labelColor: () => "#111",
+            barPercentage: 0.6,
+          }}
+          style={{ borderRadius: 12, marginLeft: -20 }}
+        />
       </View>
 
       <Text style={styles.secaoTitulo}>Métricas da Conta</Text>
